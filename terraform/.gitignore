@@ -1,0 +1,35 @@
+# =============================================================================
+# Terraform .gitignore
+# =============================================================================
+
+# Local .terraform directories
+.terraform/
+
+# Keep .terraform.lock.hcl for reproducible builds
+# (it's not in this .gitignore, so it WILL be committed)
+
+# .tfstate files (state is stored in S3)
+*.tfstate
+*.tfstate.*
+
+# Crash log files
+crash.log
+crash.*.log
+
+# Exclude all .tfvars files (may contain sensitive data)
+*.tfvars
+*.tfvars.json
+
+# Override files (used for local development overrides)
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Ignore CLI configuration files
+.terraformrc
+terraform.rc
+
+# Plan output files
+*.tfplan
+tfplan

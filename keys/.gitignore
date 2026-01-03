@@ -1,0 +1,5 @@
+# Never commit private keys
+*.pem
+*.key
+*_rsa
+!.gitignore

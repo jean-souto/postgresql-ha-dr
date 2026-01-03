@@ -1,0 +1,391 @@
+{
+  "dashboard": {
+    "id": null,
+    "uid": "pgha-overview",
+    "title": "PostgreSQL HA/DR Overview",
+    "tags": ["postgresql", "patroni", "ha", "dr"],
+    "timezone": "browser",
+    "schemaVersion": 30,
+    "version": 2,
+    "refresh": "10s",
+    "panels": [
+      {
+        "id": 1,
+        "title": "Cluster Health",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 4, "x": 0, "y": 0},
+        "targets": [{"expr": "sum(pg_up)", "legendFormat": "Nodes Up"}],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 1}, {"color": "green", "value": 2}]},
+            "mappings": [{"type": "value", "options": {"0": {"text": "DOWN", "color": "red"}, "1": {"text": "1 Node", "color": "yellow"}, "2": {"text": "2 Nodes", "color": "green"}}}]
+          }
+        }
+      },
+      {
+        "id": 2,
+        "title": "Current Leader",
+        "description": "Shows the current primary node name",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 5, "x": 4, "y": 0},
+        "targets": [{"expr": "topk(1, patroni_primary == 1)", "legendFormat": "{{name}}", "instant": true}],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]},
+            "displayName": "${__field.labels.name}"
+          }
+        },
+        "options": {
+          "reduceOptions": {"values": false, "calcs": ["last"], "fields": ""},
+          "orientation": "horizontal",
+          "textMode": "name",
+          "colorMode": "background",
+          "graphMode": "none"
+        }
+      },
+      {
+        "id": 3,
+        "title": "Replica Nodes",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 3, "x": 9, "y": 0},
+        "targets": [{"expr": "sum(patroni_replica and on(instance) up{job=\"patroni\"} == 1)", "legendFormat": "Replicas", "instant": true}],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}
+          }
+        }
+      },
+      {
+        "id": 4,
+        "title": "Database Size",
+        "description": "Size of each database",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 4, "x": 12, "y": 0},
+        "targets": [{"expr": "max(pg_database_size_bytes{datname=\"postgres\"}) by (datname)", "legendFormat": "{{datname}}"}],
+        "fieldConfig": {"defaults": {"unit": "bytes"}}
+      },
+      {
+        "id": 5,
+        "title": "Active Connections",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 4, "x": 16, "y": 0},
+        "targets": [{"expr": "sum(pg_stat_activity_count)", "legendFormat": "Connections"}],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 50}, {"color": "red", "value": 90}]}
+          }
+        }
+      },
+      {
+        "id": 6,
+        "title": "Replication Lag",
+        "description": "Replication lag in seconds (0 = fully synced)",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 4, "x": 20, "y": 0},
+        "targets": [{"expr": "max(pg_replication_lag_seconds)", "legendFormat": "Lag"}],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 5}, {"color": "red", "value": 30}]},
+            "noValue": "0s (synced)"
+          }
+        }
+      },
+      {
+        "id": 7,
+        "title": "Patroni Node Status",
+        "description": "Status of each Patroni node (Primary/Replica)",
+        "type": "table",
+        "gridPos": {"h": 4, "w": 12, "x": 0, "y": 4},
+        "targets": [
+          {"expr": "patroni_postgres_running", "legendFormat": "{{name}}", "format": "table", "instant": true, "refId": "A"},
+          {"expr": "patroni_primary", "legendFormat": "{{name}}", "format": "table", "instant": true, "refId": "B"},
+          {"expr": "patroni_postgres_timeline", "legendFormat": "{{name}}", "format": "table", "instant": true, "refId": "C"}
+        ],
+        "transformations": [
+          {"id": "merge"},
+          {"id": "organize", "options": {
+            "excludeByName": {"Time": true, "__name__": true, "job": true, "scope": true},
+            "renameByName": {"name": "Node", "instance": "Endpoint", "Value #A": "Running", "Value #B": "Primary", "Value #C": "Timeline"}
+          }}
+        ],
+        "fieldConfig": {
+          "overrides": [
+            {"matcher": {"id": "byName", "options": "Running"}, "properties": [{"id": "mappings", "value": [{"type": "value", "options": {"0": {"text": "DOWN", "color": "red"}, "1": {"text": "UP", "color": "green"}}}]}]},
+            {"matcher": {"id": "byName", "options": "Primary"}, "properties": [{"id": "mappings", "value": [{"type": "value", "options": {"0": {"text": "Replica", "color": "blue"}, "1": {"text": "Primary", "color": "green"}}}]}]}
+          ]
+        }
+      },
+      {
+        "id": 8,
+        "title": "WAL Archive Status",
+        "description": "Time since last WAL archive (backup health)",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 4, "x": 12, "y": 4},
+        "targets": [{"expr": "max(pg_stat_archiver_last_archive_age)", "legendFormat": "Archive Age"}],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "s",
+            "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 300}, {"color": "red", "value": 600}]},
+            "noValue": "No archives"
+          }
+        }
+      },
+      {
+        "id": 9,
+        "title": "Archive Success/Fail",
+        "description": "WAL archiving counters",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 4, "x": 16, "y": 4},
+        "targets": [
+          {"expr": "max(pg_stat_archiver_archived_count)", "legendFormat": "Archived"},
+          {"expr": "max(pg_stat_archiver_failed_count)", "legendFormat": "Failed"}
+        ],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}]}
+          }
+        }
+      },
+      {
+        "id": 10,
+        "title": "Timeline",
+        "description": "PostgreSQL timeline (increments after failover)",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 4, "x": 20, "y": 4},
+        "targets": [{"expr": "max(patroni_postgres_timeline)", "legendFormat": "Timeline"}],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {"mode": "absolute", "steps": [{"color": "blue", "value": null}]}
+          }
+        }
+      },
+      {
+        "id": 11,
+        "title": "Transactions per Second",
+        "type": "timeseries",
+        "gridPos": {"h": 7, "w": 12, "x": 0, "y": 8},
+        "targets": [
+          {"expr": "rate(pg_stat_database_xact_commit{datname=\"postgres\"}[1m])", "legendFormat": "Commits/s"},
+          {"expr": "rate(pg_stat_database_xact_rollback{datname=\"postgres\"}[1m])", "legendFormat": "Rollbacks/s"}
+        ],
+        "fieldConfig": {"defaults": {"custom": {"drawStyle": "line", "lineWidth": 2, "fillOpacity": 10}}}
+      },
+      {
+        "id": 12,
+        "title": "Row Operations per Second",
+        "type": "timeseries",
+        "gridPos": {"h": 7, "w": 12, "x": 12, "y": 8},
+        "targets": [
+          {"expr": "rate(pg_stat_database_tup_inserted{datname=\"postgres\"}[1m])", "legendFormat": "Inserts/s"},
+          {"expr": "rate(pg_stat_database_tup_updated{datname=\"postgres\"}[1m])", "legendFormat": "Updates/s"},
+          {"expr": "rate(pg_stat_database_tup_deleted{datname=\"postgres\"}[1m])", "legendFormat": "Deletes/s"}
+        ],
+        "fieldConfig": {"defaults": {"custom": {"drawStyle": "line", "lineWidth": 2, "fillOpacity": 10}}}
+      },
+      {
+        "id": 13,
+        "title": "CPU Usage (%)",
+        "type": "timeseries",
+        "gridPos": {"h": 6, "w": 8, "x": 0, "y": 15},
+        "targets": [{"expr": "100 - (avg by (instance) (irate(node_cpu_seconds_total{mode=\"idle\"}[5m])) * 100)", "legendFormat": "{{instance}}"}]
+      },
+      {
+        "id": 14,
+        "title": "Memory Usage (%)",
+        "type": "timeseries",
+        "gridPos": {"h": 6, "w": 8, "x": 8, "y": 15},
+        "targets": [{"expr": "(1 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes)) * 100", "legendFormat": "{{instance}}"}]
+      },
+      {
+        "id": 15,
+        "title": "Disk Usage (%)",
+        "type": "timeseries",
+        "gridPos": {"h": 6, "w": 8, "x": 16, "y": 15},
+        "targets": [{"expr": "(1 - (node_filesystem_avail_bytes{mountpoint=\"/\"} / node_filesystem_size_bytes{mountpoint=\"/\"})) * 100", "legendFormat": "{{instance}}"}]
+      },
+      {
+        "id": 16,
+        "title": "etcd Cluster Health",
+        "type": "stat",
+        "gridPos": {"h": 3, "w": 6, "x": 0, "y": 21},
+        "targets": [{"expr": "sum(up{job=\"etcd\"})", "legendFormat": "etcd Nodes"}],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 2}, {"color": "green", "value": 3}]}
+          }
+        }
+      },
+      {
+        "id": 17,
+        "title": "Streaming Replicas",
+        "type": "stat",
+        "gridPos": {"h": 3, "w": 6, "x": 6, "y": 21},
+        "targets": [{"expr": "sum(patroni_postgres_streaming)", "legendFormat": "Streaming"}],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "green", "value": 1}]}
+          }
+        }
+      },
+      {
+        "id": 18,
+        "title": "WAL Position (Primary)",
+        "type": "stat",
+        "gridPos": {"h": 3, "w": 6, "x": 12, "y": 21},
+        "targets": [{"expr": "max(patroni_xlog_location{name=~\".*patroni.*\"})", "legendFormat": "WAL Position"}],
+        "fieldConfig": {"defaults": {"unit": "bytes"}}
+      },
+      {
+        "id": 19,
+        "title": "Replication Lag Over Time",
+        "type": "timeseries",
+        "gridPos": {"h": 5, "w": 6, "x": 18, "y": 21},
+        "targets": [{"expr": "pg_replication_lag_seconds", "legendFormat": "{{instance}}"}],
+        "fieldConfig": {"defaults": {"unit": "s", "custom": {"drawStyle": "line", "lineWidth": 2, "fillOpacity": 20}}}
+      },
+      {
+        "id": 20,
+        "title": "PgBouncer",
+        "type": "row",
+        "gridPos": {"h": 1, "w": 24, "x": 0, "y": 26},
+        "collapsed": false
+      },
+      {
+        "id": 21,
+        "title": "PgBouncer Status",
+        "description": "PgBouncer exporter connectivity",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 4, "x": 0, "y": 27},
+        "targets": [{"expr": "sum(pgbouncer_up)", "legendFormat": "Up"}],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {"mode": "absolute", "steps": [{"color": "red", "value": null}, {"color": "yellow", "value": 1}, {"color": "green", "value": 2}]},
+            "mappings": [{"type": "value", "options": {"0": {"text": "DOWN", "color": "red"}, "1": {"text": "1 Node", "color": "yellow"}, "2": {"text": "2 Nodes", "color": "green"}}}]
+          }
+        }
+      },
+      {
+        "id": 22,
+        "title": "Active Client Connections",
+        "description": "Clients actively executing queries",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 4, "x": 4, "y": 27},
+        "targets": [{"expr": "sum(pgbouncer_pools_client_active_connections)", "legendFormat": "Active"}],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 50}, {"color": "red", "value": 90}]}
+          }
+        }
+      },
+      {
+        "id": 23,
+        "title": "Waiting Clients",
+        "description": "Clients waiting for a server connection (should be 0)",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 4, "x": 8, "y": 27},
+        "targets": [{"expr": "sum(pgbouncer_pools_client_waiting_connections)", "legendFormat": "Waiting"}],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 5}, {"color": "red", "value": 10}]}
+          }
+        }
+      },
+      {
+        "id": 24,
+        "title": "Server Connections (Active)",
+        "description": "Backend connections actively processing queries",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 4, "x": 12, "y": 27},
+        "targets": [{"expr": "sum(pgbouncer_pools_server_active_connections)", "legendFormat": "Active"}],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 15}, {"color": "red", "value": 20}]}
+          }
+        }
+      },
+      {
+        "id": 25,
+        "title": "Server Connections (Idle)",
+        "description": "Backend connections available in pool",
+        "type": "stat",
+        "gridPos": {"h": 4, "w": 4, "x": 16, "y": 27},
+        "targets": [{"expr": "sum(pgbouncer_pools_server_idle_connections)", "legendFormat": "Idle"}],
+        "fieldConfig": {
+          "defaults": {
+            "thresholds": {"mode": "absolute", "steps": [{"color": "blue", "value": null}]}
+          }
+        }
+      },
+      {
+        "id": 26,
+        "title": "Pool Utilization",
+        "description": "Percentage of pool being used",
+        "type": "gauge",
+        "gridPos": {"h": 4, "w": 4, "x": 20, "y": 27},
+        "targets": [{"expr": "sum(pgbouncer_pools_server_active_connections) / (sum(pgbouncer_pools_server_active_connections) + sum(pgbouncer_pools_server_idle_connections)) * 100", "legendFormat": "Usage"}],
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "min": 0,
+            "max": 100,
+            "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 70}, {"color": "red", "value": 90}]}
+          }
+        }
+      },
+      {
+        "id": 27,
+        "title": "PgBouncer Client Connections Over Time",
+        "type": "timeseries",
+        "gridPos": {"h": 6, "w": 12, "x": 0, "y": 31},
+        "targets": [
+          {"expr": "pgbouncer_pools_client_active_connections", "legendFormat": "active - {{database}}"},
+          {"expr": "pgbouncer_pools_client_waiting_connections", "legendFormat": "waiting - {{database}}"}
+        ],
+        "fieldConfig": {"defaults": {"custom": {"drawStyle": "line", "lineWidth": 2, "fillOpacity": 10}}}
+      },
+      {
+        "id": 28,
+        "title": "PgBouncer Server Connections Over Time",
+        "type": "timeseries",
+        "gridPos": {"h": 6, "w": 12, "x": 12, "y": 31},
+        "targets": [
+          {"expr": "pgbouncer_pools_server_active_connections", "legendFormat": "active - {{database}}"},
+          {"expr": "pgbouncer_pools_server_idle_connections", "legendFormat": "idle - {{database}}"}
+        ],
+        "fieldConfig": {"defaults": {"custom": {"drawStyle": "line", "lineWidth": 2, "fillOpacity": 10}}}
+      },
+      {
+        "id": 29,
+        "title": "Queries per Second",
+        "description": "Query throughput through PgBouncer",
+        "type": "timeseries",
+        "gridPos": {"h": 6, "w": 8, "x": 0, "y": 37},
+        "targets": [{"expr": "rate(pgbouncer_stats_totals_queries_pooled_total[1m])", "legendFormat": "{{database}}"}],
+        "fieldConfig": {"defaults": {"unit": "qps", "custom": {"drawStyle": "line", "lineWidth": 2, "fillOpacity": 10}}}
+      },
+      {
+        "id": 30,
+        "title": "Average Query Time",
+        "description": "Average time spent on queries",
+        "type": "timeseries",
+        "gridPos": {"h": 6, "w": 8, "x": 8, "y": 37},
+        "targets": [{"expr": "rate(pgbouncer_stats_totals_queries_duration_seconds_total[5m]) / rate(pgbouncer_stats_totals_queries_pooled_total[5m])", "legendFormat": "{{database}}"}],
+        "fieldConfig": {"defaults": {"unit": "s", "custom": {"drawStyle": "line", "lineWidth": 2, "fillOpacity": 10}}}
+      },
+      {
+        "id": 31,
+        "title": "Network Traffic",
+        "description": "Bytes sent/received through PgBouncer",
+        "type": "timeseries",
+        "gridPos": {"h": 6, "w": 8, "x": 16, "y": 37},
+        "targets": [
+          {"expr": "rate(pgbouncer_stats_totals_received_bytes_total[1m])", "legendFormat": "received - {{database}}"},
+          {"expr": "rate(pgbouncer_stats_totals_sent_bytes_total[1m])", "legendFormat": "sent - {{database}}"}
+        ],
+        "fieldConfig": {"defaults": {"unit": "Bps", "custom": {"drawStyle": "line", "lineWidth": 2, "fillOpacity": 10}}}
+      }
+    ]
+  },
+  "overwrite": true
+}

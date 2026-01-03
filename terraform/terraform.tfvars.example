@@ -1,0 +1,61 @@
+# =============================================================================
+# Terraform Variables - PostgreSQL HA/DR Project
+# =============================================================================
+# Copy this file to terraform.tfvars and fill in your values.
+#
+# Usage:
+#   cp terraform.tfvars.example terraform.tfvars
+#   # Edit terraform.tfvars with your values
+#   terraform init
+#   terraform plan
+#   terraform apply
+# =============================================================================
+
+# AWS Configuration
+aws_account_id = "YOUR_AWS_ACCOUNT_ID"  # e.g., "123456789012"
+aws_region     = "us-east-1"
+
+# =============================================================================
+# SSH Key Pair Configuration - Choose ONE of the following options:
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# OPTION 1: Auto-generate new key pair (recommended for dev/testing)
+# -----------------------------------------------------------------------------
+# Generates a new RSA-4096 key pair and saves private key to ../keys/
+# create_key_pair = true
+# public_key_path = ""  # Leave empty to auto-generate
+
+# -----------------------------------------------------------------------------
+# OPTION 2: Use your existing public key file
+# -----------------------------------------------------------------------------
+# Creates a new key pair from your existing SSH public key
+# create_key_pair = true
+# public_key_path = "~/.ssh/id_rsa.pub"
+
+# -----------------------------------------------------------------------------
+# OPTION 3: Use existing AWS key pair (default)
+# -----------------------------------------------------------------------------
+# Uses a key pair that already exists in your AWS account
+create_key_pair = false
+key_name        = "your-key-pair-name"
+
+# Environment
+environment  = "dev"
+project_name = "pgha"
+
+# Networking
+vpc_cidr = "10.0.0.0/16"
+admin_ip = "YOUR_IP/32"  # Restrict to your IP for security
+
+# Instance Configuration
+instance_type = "t3.micro"  # Free tier eligible
+
+# Patroni Cluster Size
+# Options: 2 (HA with 1 replica) or 3 (HA with 2 replicas)
+# Note: 2 nodes uses 4 vCPU, 3 nodes uses 6 vCPU
+patroni_instance_count = 2
+
+# Monitoring Configuration
+enable_monitoring = true
+alert_email       = ""  # Optional: Set to receive email alerts
