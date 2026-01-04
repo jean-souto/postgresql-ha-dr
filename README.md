@@ -1,8 +1,11 @@
 # PostgreSQL HA/DR on AWS
 
-[![Terraform](https://img.shields.io/badge/Terraform-1.6+-623CE4?logo=terraform)](https://terraform.io)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17-336791?logo=postgresql)](https://postgresql.org)
-[![AWS](https://img.shields.io/badge/AWS-EC2%20|%20S3%20|%20NLB-FF9900?logo=amazonaws)](https://aws.amazon.com)
+[![Patroni](https://img.shields.io/badge/Patroni-4.x-2C3E50)](https://patroni.readthedocs.io/)
+[![etcd](https://img.shields.io/badge/etcd-3.5.17-419EDA?logo=etcd)](https://etcd.io/)
+[![pgBackRest](https://img.shields.io/badge/pgBackRest-2.54+-1E8449)](https://pgbackrest.org/)
+[![Terraform](https://img.shields.io/badge/Terraform-1.6+-623CE4?logo=terraform)](https://terraform.io)
+[![AWS](https://img.shields.io/badge/AWS-EC2%20|%20NLB%20|%20S3-FF9900?logo=amazonaws)](https://aws.amazon.com)
 
 **[English](#english)** | **[Português](#português)**
 
