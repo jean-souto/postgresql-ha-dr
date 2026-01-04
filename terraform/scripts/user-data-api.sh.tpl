@@ -69,7 +69,7 @@ DB_PASSWORD_RAW=$(aws ssm get-parameter --name "$SSM_PASSWORD_PARAM" --with-decr
 # Escape $ characters for docker-compose ($ -> $$)
 # Docker Compose interprets $VAR as variable substitution, $$ escapes to literal $
 # Using bash parameter expansion which is more reliable than sed through heredocs
-DB_PASSWORD_ESCAPED="${DB_PASSWORD_RAW//\$/\$\$}"
+DB_PASSWORD_ESCAPED="$${DB_PASSWORD_RAW//\$/\$\$}"
 
 # -----------------------------------------------------------------------------
 # Create Docker Compose Configuration

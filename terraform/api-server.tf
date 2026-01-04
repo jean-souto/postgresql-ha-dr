@@ -229,6 +229,11 @@ resource "aws_eip" "api_server" {
 # Outputs
 # -----------------------------------------------------------------------------
 
+output "api_server_instance_id" {
+  description = "Instance ID of the API server"
+  value       = aws_instance.api_server.id
+}
+
 output "api_server_public_ip" {
   description = "Public IP of the API server"
   value       = aws_eip.api_server.public_ip

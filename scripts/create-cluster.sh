@@ -299,6 +299,39 @@ build_and_push_apis() {
         docker push "$go_repo:latest"
         log_success "Go API pushed to ECR"
     fi
+
+    # Start API containers on the server
+    log_info "Starting API containers on server..."
+    cd "$TERRAFORM_DIR"
+    local api_id=$(terraform output -json api_server_instance_id 2>/dev/null | tr -d '"' || echo "")
+
+    if [[ -n "$api_id" ]] && [[ "$api_id" != "null" ]]; then
+        local cmd_id=$(aws ssm send-command \
+            --instance-ids "$api_id" \
+            --document-name "AWS-RunShellScript" \
+            --parameters 'commands=["cd /opt/api && ./ecr-login.sh && docker-compose pull && docker-compose up -d"]' \
+            --output text \
+            --query 'Command.CommandId' \
+            --profile $PROFILE \
+            --region $PRIMARY_REGION 2>/dev/null || echo "")
+
+        if [[ -n "$cmd_id" ]]; then
+            sleep 10
+            local status=$(aws ssm get-command-invocation \
+                --command-id "$cmd_id" \
+                --instance-id "$api_id" \
+                --query 'Status' \
+                --output text \
+                --profile $PROFILE \
+                --region $PRIMARY_REGION 2>/dev/null || echo "Unknown")
+
+            if [[ "$status" == "Success" ]]; then
+                log_success "API containers started"
+            else
+                log_warn "API containers may still be starting (status: $status)"
+            fi
+        fi
+    fi
 }
 
 # =============================================================================
@@ -359,7 +392,7 @@ print_summary() {
     # Get all outputs
     BASTION_IP=$(terraform output -raw bastion_public_ip 2>/dev/null || echo "N/A")
     NLB_DNS=$(terraform output -raw nlb_dns_name 2>/dev/null || echo "N/A")
-    MONITORING_IP=$(terraform output -raw monitoring_private_ip 2>/dev/null || echo "N/A")
+    MONITORING_IP=$(terraform output -raw monitoring_public_ip 2>/dev/null || echo "N/A")
     API_SERVER_IP=$(terraform output -raw api_server_private_ip 2>/dev/null || echo "N/A")
 
     echo ""
